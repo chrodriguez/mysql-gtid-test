@@ -310,3 +310,58 @@ docker-compose exec master1 mysql -pmaster1 -e 'show master status' \
   && docker-compose exec one mysql -pone -e 'show master status'
 ```
 
+#### Verificaciones
+
+* Probar insertar, eliminar o modificar algo en **one** y analizar como quedan los datos
+  en:
+  * **two**
+  * **three**
+  * **slave-all**
+* probar insertar, eliminar o modificar algo en **master1** y analizar como
+  quedan los datos en **slave-all**
+
+#### Apagar two y mover three para que apunte a one
+
+Apagamos **two**:
+
+```
+docker-compose stop two
+```
+
+Verificamos como queda **three**:
+
+```
+docker-compose exec three mysql -pone -e 'show slave status \G'
+```
+
+Seguramente veamos algo como:
+
+```
+Slave_IO_State: Reconnecting after a failed master event read
+```
+
+Entonces, simplemente cambiamos el master para que apunte al nuevo, pero antes
+de hacerlo, insertamos un dato o modificamos algo en **one**:
+
+```
+docker-compose exec one mysql -pone one_cities
+
+```
+
+```sql
+insert into cities(name,short_name) values('Chascomus','CH');
+```
+
+**Verificar que no están los datos en three**
+
+Ahora, cambiamos el master de **three**:
+
+```
+stop slave;
+change master to master_host='one', master_user='repl', \
+  master_password='pass', master_auto_position=1;
+start slave;
+show slave status \G
+```
+
+**Voilà**
