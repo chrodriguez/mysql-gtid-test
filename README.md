@@ -67,17 +67,23 @@ es, es esclavo de **one** y **master1**
 Primero creamos el usuario de replicación en **one** y **master1**:
 
 ```
-~: docker-compose exec one mysql -pone
-mysql> 
-mysql> CREATE USER 'repl'@'%' IDENTIFIED BY 'pass';
-mysql> GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
-mysq > exit
+docker-compose exec one mysql -pone
+```
 
-~: docker-compose exec master1 mysql -pmaster1
-mysql>
-mysql> CREATE USER 'repl'@'%' IDENTIFIED BY 'pass';
-mysql> GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
-mysq > exit;
+```sql
+CREATE USER 'repl'@'%' IDENTIFIED BY 'pass';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+exit
+```
+
+```
+docker-compose exec master1 mysql -pmaster1
+```
+
+```sql
+CREATE USER 'repl'@'%' IDENTIFIED BY 'pass';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+exit;
 ```
 
 Cargar dumps de prueba en ambas dbs para realizar las pruebas. Asumimos las
@@ -161,8 +167,8 @@ Asumiendo el dump para one se llama `one.sql` y el de master1 se llama
 `master1.sql`, entonces:
 
 ```
-~: docker exec -i mysqlgtid_one_1 mysql -pone < sql/one.sql
-~: docker exec -i mysqlgtid_master1_1 mysql -pmaster1 < sql/master1.sql
+docker exec -i mysqlgtid_one_1 mysql -pone < sql/one.sql
+docker exec -i mysqlgtid_master1_1 mysql -pmaster1 < sql/master1.sql
 ```
 
 #### Inicializamos los esclavos
@@ -172,7 +178,7 @@ Asumiendo el dump para one se llama `one.sql` y el de master1 se llama
 Debemos descargar los datos desde **one** para inicializar **two**:
 
 ```
-~: docker exec mysqlgtid_one_1 mysqldump -pone --all-databases \
+docker exec mysqlgtid_one_1 mysqldump -pone --all-databases \
   --flush-privileges --single-transaction --flush-logs --triggers \
   --routines --events --hex-blob > tmp/one-dump.sql
 ```
@@ -181,10 +187,12 @@ La siguiente instrucción, nos va a permitir poder cargar un dump que trae
 información del GTID del master:
 
 ```
-~: docker-compose exec two mysql -ptwo
-mysql>
-mysql> reset master;
-mysql> exit;
+docker-compose exec two mysql -ptwo
+```
+
+```sql
+reset master;
+exit;
 ```
 
 Luego, cargamos el dump one-dump.sql en two:
@@ -197,11 +205,14 @@ Conectamos luego con two, para inicializar el esclavo. *Observar que la clave
 de two es one luego de cargar el dump*
 
 ```
-~: docker-compose exec two mysql -pone
-mysql>
-mysql> change master to master_host='one', master_user='repl', \
-        master_password='pass', master_auto_position=1;
-mysql> show slave status \G
+docker-compose exec two mysql -pone
+```
+
+```sql
+change master to master_host='one', master_user='repl', \
+  master_password='pass', master_auto_position=1;
+start slave;
+show slave status \G
 ```
 
 ##### Inicializamos **three** a partir de **one**
@@ -209,7 +220,7 @@ mysql> show slave status \G
 Debemos descargar los datos desde **two** para inicializar **three**:
 
 ```
-~: docker exec mysqlgtid_two_1 mysqldump -pone --all-databases \
+docker exec mysqlgtid_two_1 mysqldump -pone --all-databases \
   --flush-privileges --single-transaction --flush-logs --triggers \
   --routines --events --hex-blob > tmp/two-dump.sql
 ```
@@ -218,10 +229,12 @@ La siguiente instrucción, nos va a permitir poder cargar un dump que trae
 información del GTID del master:
 
 ```
-~: docker-compose exec three mysql -pthree
-mysql>
-mysql> reset master;
-mysql> exit;
+docker-compose exec three mysql -pthree
+```
+
+```sql
+reset master;
+exit;
 ```
 
 Luego, cargamos el dump two-dump.sql en two:
@@ -234,10 +247,66 @@ Conectamos luego con three, para inicializar el esclavo. *Observar que la clave
 de two es one luego de cargar el dump*
 
 ```
-~: docker-compose exec three mysql -pone
-mysql>
-mysql> change master to master_host='two', master_user='repl', \
-        master_password='pass', master_auto_position=1;
-mysql> show slave status \G
+docker-compose exec three mysql -pone
+```
+
+```sql
+change master to master_host='two', master_user='repl', \
+  master_password='pass', master_auto_position=1;
+start slave;
+show slave status \G
+```
+
+#### Inicializamos **slave-all** a partir de **one** y **master1**
+
+Esta es la configuración más compleja, porque tenemos dos master diferentes y
+para ello, debemos usar canales. Cada canal de un esclavo multi source, mantiene
+los GTID del master correspondiente para cada canal. Por ello, solo para
+inicializar el esclavo, los dumps serán parciales de los respectivos master,
+teniendo así que usar entonces la opción de mysqldump `--set-gtid-purged=OFF`.
+
+##### Descargamos los dumps de **one** y **master1**
+
+```
+docker exec mysqlgtid_one_1 mysqldump -pone --databases one_people one_cities \
+  --flush-privileges --single-transaction --flush-logs --triggers   \
+  --routines --events --hex-blob --set-gtid-purged=OFF > tmp/one_slave-all.sql
+
+docker exec mysqlgtid_master1_1 mysqldump -pmaster1 --databases master1_countries \
+  master1_subjects --flush-privileges --single-transaction --flush-logs \
+  --triggers   --routines --events --hex-blob \
+  --set-gtid-purged=OFF > tmp/master1-slave-all.sql
+```
+
+##### Cargamos los dumps en slave-all
+
+```
+docker exec -i mysqlgtid_slave-all_1 mysql -pslave < tmp/one_slave-all.sql
+docker exec -i mysqlgtid_slave-all_1 mysql -pslave < tmp/master1-slave-all.sql
+```
+
+##### Preparamos al esclavo multi source
+
+Tenemos que resetear los GTID, y apuntar a los respectivos masters, para ello
+corremos los siguientes comandos:
+
+```sql
+reset master;
+change master to master_host='one', master_user='repl', \
+  master_password='pass', master_auto_position=1 for channel 'one';
+change master to master_host='master1', master_user='repl', \
+  master_password='pass', master_auto_position=1 for channel 'master1';
+set global \
+  gtid_purged='6bdc251f-3c20-11e8-846f-0242ac1a0005:1-29,6ab4e989-3c20-11e8-8e7f-0242ac1a0003:1-49';
+start slave for channel 'one';
+start slave for channel 'master1';
+show slave status \G
+```
+**OJO**: *Notar que los valores de los gtid enviados arriba se obtienen de la siguiente
+salida:*
+
+```
+docker-compose exec master1 mysql -pmaster1 -e 'show master status' \
+  && docker-compose exec one mysql -pone -e 'show master status'
 ```
 
