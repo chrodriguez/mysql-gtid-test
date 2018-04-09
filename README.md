@@ -174,7 +174,7 @@ Debemos descargar los datos desde **one** para inicializar **two**:
 ```
 ~: docker exec mysqlgtid_one_1 mysqldump -pone --all-databases \
   --flush-privileges --single-transaction --flush-logs --triggers \
-  --routines --events --hex-blob > one-dump.sql
+  --routines --events --hex-blob > tmp/one-dump.sql
 ```
 
 La siguiente instrucción, nos va a permitir poder cargar un dump que trae
@@ -190,7 +190,7 @@ mysql> exit;
 Luego, cargamos el dump one-dump.sql en two:
 
 ```
-docker exec -i mysqlgtid_two_1 mysql -ptwo < one-dump.sql
+docker exec -i mysqlgtid_two_1 mysql -ptwo < tmp/one-dump.sql
 ```
 
 Conectamos luego con two, para inicializar el esclavo. *Observar que la clave 
@@ -211,7 +211,7 @@ Debemos descargar los datos desde **two** para inicializar **three**:
 ```
 ~: docker exec mysqlgtid_two_1 mysqldump -pone --all-databases \
   --flush-privileges --single-transaction --flush-logs --triggers \
-  --routines --events --hex-blob > two-dump.sql
+  --routines --events --hex-blob > tmp/two-dump.sql
 ```
 
 La siguiente instrucción, nos va a permitir poder cargar un dump que trae
@@ -227,7 +227,7 @@ mysql> exit;
 Luego, cargamos el dump two-dump.sql en two:
 
 ```
-docker exec -i mysqlgtid_three_1 mysql -pthree < two-dump.sql
+docker exec -i mysqlgtid_three_1 mysql -pthree < tmp/two-dump.sql
 ```
 
 Conectamos luego con three, para inicializar el esclavo. *Observar que la clave 
