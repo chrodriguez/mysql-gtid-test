@@ -181,7 +181,7 @@ La siguiente instrucción, nos va a permitir poder cargar un dump que trae
 información del GTID del master:
 
 ```
-~: docker-exec two mysql -ptwo
+~: docker-compose exec two mysql -ptwo
 mysql>
 mysql> reset master;
 mysql> exit;
@@ -197,7 +197,7 @@ Conectamos luego con two, para inicializar el esclavo. *Observar que la clave
 de two es one luego de cargar el dump*
 
 ```
-~: docker-exec two mysql -pone
+~: docker-compose exec two mysql -pone
 mysql>
 mysql> change master to master_host='one', master_user='repl', \
         master_password='pass', master_auto_position=1;
@@ -218,7 +218,7 @@ La siguiente instrucción, nos va a permitir poder cargar un dump que trae
 información del GTID del master:
 
 ```
-~: docker-exec three mysql -pthree
+~: docker-compose exec three mysql -pthree
 mysql>
 mysql> reset master;
 mysql> exit;
@@ -234,7 +234,7 @@ Conectamos luego con three, para inicializar el esclavo. *Observar que la clave
 de two es one luego de cargar el dump*
 
 ```
-~: docker-exec three mysql -pone
+~: docker-compose exec three mysql -pone
 mysql>
 mysql> change master to master_host='two', master_user='repl', \
         master_password='pass', master_auto_position=1;
