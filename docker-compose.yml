@@ -1,0 +1,94 @@
+version: '3'
+services:
+  one:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: one
+    volumes:
+      - one:/var/lib/mysql
+    command:
+    - --server-id=1
+    - --gtid-mode=ON
+    - --enforce-gtid-consistency=ON
+    - --master-info-repository=TABLE
+    - --relay-log-info-repository=TABLE
+    - --binlog-checksum=NONE
+    - --log-slave-updates=ON
+    - --log-bin=binlog
+    - --binlog-format=ROW
+
+  two:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: two
+    volumes:
+      - two:/var/lib/mysql
+    command:
+    - --server-id=2
+    - --gtid-mode=ON
+    - --enforce-gtid-consistency=ON
+    - --master-info-repository=TABLE
+    - --relay-log-info-repository=TABLE
+    - --binlog-checksum=NONE
+    - --log-slave-updates=ON
+    - --log-bin=binlog
+    - --binlog-format=ROW
+
+  three:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: three
+    volumes:
+      - three:/var/lib/mysql
+    command:
+    - --server-id=3
+    - --gtid-mode=ON
+    - --enforce-gtid-consistency=ON
+    - --master-info-repository=TABLE
+    - --relay-log-info-repository=TABLE
+    - --binlog-checksum=NONE
+    - --log-slave-updates=ON
+    - --log-bin=binlog
+    - --binlog-format=ROW
+  master1:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: master1
+    volumes:
+      - master1:/var/lib/mysql
+    command:
+    - --server-id=4
+    - --gtid-mode=ON
+    - --enforce-gtid-consistency=ON
+    - --master-info-repository=TABLE
+    - --relay-log-info-repository=TABLE
+    - --binlog-checksum=NONE
+    - --log-slave-updates=ON
+    - --log-bin=binlog
+    - --binlog-format=ROW
+  slave-all:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: slave
+    volumes:
+      - slave-all:/var/lib/mysql
+    command:
+    - --server-id=5
+    - --gtid-mode=ON
+    - --enforce-gtid-consistency=ON
+    - --master-info-repository=TABLE
+    - --relay-log-info-repository=TABLE
+    - --binlog-checksum=NONE
+    - --log-slave-updates=ON
+    - --log-bin=binlog
+    - --binlog-format=ROW
+    - --replicate-ignore-db=one:mysql
+    - --replicate-ignore-db=master1:mysql
+
+
+volumes:
+  one:
+  two:
+  three:
+  slave-all:
+  master1:
