@@ -67,13 +67,13 @@ es, es esclavo de **one** y **master1**
 Primero creamos el usuario de replicación en **one** y **master1**:
 
 ```
-~: docker-compose one mysql -pone
+~: docker-compose exec one mysql -pone
 mysql> 
 mysql> CREATE USER 'repl'@'%' IDENTIFIED BY 'pass';
 mysql> GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
 mysq > exit
 
-~: docker-compose master1 mysql -pmaster1
+~: docker-compose exec master1 mysql -pmaster1
 mysql>
 mysql> CREATE USER 'repl'@'%' IDENTIFIED BY 'pass';
 mysql> GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
@@ -83,53 +83,73 @@ mysq > exit;
 Cargar dumps de prueba en ambas dbs para realizar las pruebas. Asumimos las
 siguientes bases de datos:
 
-* En one: se crea people y cities
-* En master1: se crean countries y subjects
+* **En one:** se crean las dbs `one_people` y `one_cities`
+* **En master1:** se crean `master1_countries` y `master1_subjects`
 
 
 Todas con las siguientes estructuras:
 
 ```sql
 -- Dumps para one
+
+DROP DATABASE IF EXISTS one_people;
+CREATE DATABASE one_people;
+USE one_people;
 CREATE TABLE `people` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
    `lastname` varchar(255) NOT NULL,
   `firstname` varchar(255) NOT NULL,
   `identification_type` int(11) DEFAULT NULL,
   `identification_number` varchar(20) DEFAULT NULL,
-  `sex` int(11) NOT NULL,
+  `sex` int(11) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
 );
 INSERT INTO people(lastname, firstname, identification_type,
-identification_number) VALUES('Perez', 'Juan', 1, 1111),
-('Gomez','Jose',1,2222),('Rodriguez','Maria',1,3333);
+  identification_number) VALUES
+  ('Perez', 'Juan', 1, 1111),
+  ('Gomez','Jose',1,2222),
+  ('Rodriguez','Maria',1,3333);
 
+DROP DATABASE IF EXISTS one_cities;
+CREATE DATABASE one_cities;
+USE one_cities;
 CREATE TABLE `cities` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `short_name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 );
-INSERT INTO cities(name,sort_name) VALUES('La Plata','LP'),('Capital
-Federal','CF');
+INSERT INTO cities(name,short_name) VALUES
+  ('La Plata','LP'),
+  ('Capital Federal','CF');
 
 -- Dumps para master1
 
+DROP DATABASE IF EXISTS master1_countries;
+CREATE DATABASE master1_countries;
+USE master1_countries;
 CREATE TABLE `countries` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 );
-INSERT INTO countries(name) VALUES('Argentina'),('Bolivia'),('Paraguay');
+INSERT INTO countries(name) VALUES
+  ('Argentina'),
+  ('Bolivia'),
+  ('Paraguay');
 
+DROP DATABASE IF EXISTS master1_subjects;
+CREATE DATABASE master1_subjects;
+USE master1_subjects;
 CREATE TABLE `subjects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL COMMENT,
+  `name` varchar(255) NOT NULL,
   `fantasy_name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 );
-INSERT INTO subjects(name, fantasy_name) VLAUES('Matematicas',
-'Mate'),('Lengua','Lengua y Literatura');
+INSERT INTO subjects(name, fantasy_name) VALUES
+  ('Matematicas', 'Mate'),
+  ('Lengua','Lengua y Literatura');
 
 ```
 
