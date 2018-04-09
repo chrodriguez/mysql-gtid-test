@@ -12,8 +12,22 @@ archivos del nuevo maetsro.
 
 ## Notas
 
-Los ejemplos asumen el proyecto donde se prueban los contenedores con
+* Los ejemplos asumen el proyecto donde se prueban los contenedores con
 docker-compose se llama mysql-gtid
+* Para inicializar un proyecto a cero correr los siguiente comandos:
+
+```
+docker-compose down
+docker volume rm mysqlgtid_one mysqlgtid_two mysqlgtid_three\
+  mysqlgtid_master1 mysqlgtid_slave-all 
+```
+
+* Para inicializar el stack completo:
+
+```
+docker-compose up -d
+```
+
 
 ## Arquitectura de la prueba
 
@@ -119,14 +133,16 @@ INSERT INTO subjects(name, fantasy_name) VLAUES('Matematicas',
 
 ```
 
+*Estos archivos ya existen en el directorio `sql/*sql`*
+
 #### Inicializamos los master
 
 Asumiendo el dump para one se llama `one.sql` y el de master1 se llama
 `master1.sql`, entonces:
 
 ```
-~: docker exec -i mysqlgtid_one_1 mysql -pone < one.sql
-~: docker exec -i mysqlgtid_master1_1 mysql -pmaster1 < one.sql
+~: docker exec -i mysqlgtid_one_1 mysql -pone < sql/one.sql
+~: docker exec -i mysqlgtid_master1_1 mysql -pmaster1 < sql/master1.sql
 ```
 
 #### Inicializamos los esclavos
