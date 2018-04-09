@@ -55,12 +55,12 @@ es, es esclavo de **one** y **master1**
 ## Las Pruebas
 
 1. Inicializar las configuraciones
-  1. Se incializan los masters
-  1. Se inciializan los esclavos
-  1. Se verifica que los esclavos estén funcionando
+    1. Se incializan los masters
+    1. Se inciializan los esclavos
+    1. Se verifica que los esclavos estén funcionando
 2. Sacamos de servicio a **two**
-  2. Analizamos el estado de **three**
-  2. Cambiamos el master que apunta **three**
+    2. Analizamos el estado de **three**
+    2. Cambiamos el master que apunta **three**
 
 ### Inicializar las configuraciones
 
